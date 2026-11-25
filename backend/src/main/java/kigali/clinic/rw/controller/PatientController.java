@@ -1,0 +1,89 @@
+package kigali.clinic.rw.controller;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import kigali.clinic.rw.domain.Appointment;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import kigali.clinic.rw.domain.Patient;
+import kigali.clinic.rw.service.PatientService;
+
+@RestController
+@RequestMapping(value = {"/api/patient", "/api/patients"})
+public class PatientController {
+
+    @Autowired
+    private PatientService patientService;
+
+    @GetMapping(value = "/of-doctor/{doctorId}")
+    public ResponseEntity<?> findPatientsByDoctorId(@PathVariable UUID doctorId) {
+        List<Patient> patients = patientService.findPatientsByDoctorId(doctorId);
+        if (patients == null) {
+            return new ResponseEntity<>("The doctor with that id does not exist", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(patients, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/by-last-name")
+    public ResponseEntity<List<Patient>> findByLastName(@RequestParam String lastName) {
+        return new ResponseEntity<>(patientService.findByLastNameIgnoreCase(lastName), HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/frequent")
+    public ResponseEntity<List<Patient>> findFrequentPatients(@RequestParam int min) {
+        return new ResponseEntity<>(patientService.findFrequentPatients(min), HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/save")
+    public ResponseEntity<?> savePatient(@RequestBody Patient patient) {
+        String message = patientService.savePatient(patient);
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/all")
+    public ResponseEntity<List<Patient>> findAll() {
+        return new ResponseEntity<>(patientService.findAll(), HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/{ssNumber}/upcoming")
+    public ResponseEntity<?> findUpcoming(@PathVariable String ssNumber) {
+        List<Appointment> appointments = patientService.findUpcoming(ssNumber);
+        if (appointments == null) {
+            return new ResponseEntity<>("That patient with that ssnumber does not exist", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(appointments, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/{id}")
+    public ResponseEntity<?> findById(@PathVariable UUID id) {
+        Optional<Patient> patient = patientService.findById(id);
+        if (patient.isPresent()) {
+            return new ResponseEntity<>(patient.get(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Patient not found", HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PutMapping(value = "/update/{id}")
+    public ResponseEntity<?> updatePatient(@PathVariable UUID id, @RequestBody Patient patient) {
+        String message = patientService.updatePatient(id, patient);
+        if (message.equals("Patient updated successfully")) {
+            return new ResponseEntity<>(message, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DeleteMapping(value = "/delete/{id}")
+    public ResponseEntity<?> deletePatient(@PathVariable UUID id) {
+        String message = patientService.deletePatient(id);
+        if (message.equals("Patient deleted successfully")) {
+            return new ResponseEntity<>(message, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+        }
+    }
+}
